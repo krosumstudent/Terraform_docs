@@ -1,0 +1,636 @@
+IAC
+-----
+ ->manage any infrastructure components (DB,networks,storage,etc.,)
+
+shellscript = programming - line by line of code 
+------------  
+		Vs
+
+ansible - YAML - key: value - procedure 
+               ----------------------
+		Vs              
+TF - declartive code
+----
+block blockName <label>{
+	<arguments>
+}
+
+resource "oci_instance" ....{	resource "aws_instance" ...{
+	.....				....
+	.....				....
+	.....		}
+}			----------------//
+------------------------------------//
+
+				            <==================Ansible =========>
+[Initial Infra structure setup ] => [Manage Infra ] =>[ Initial Application setup ] =>[Manage Application]
+--------------------------------------------------------->
+                 Terraform	
+Configuration Management = existing infrastructure - procedure design - mutable			
+Ex:
+-----
+				[Host01]
+				 webserver 2.x    create a newuser
+				 |		
+				Webserver 3.x    create a newfile
+					         delete a newfile
+
+
+declarive - immutable => [Host01]
+		        ^^^^^
+
+ [MySystem] - p1.tf  ---- TFCore---- providers(plugins+APIs)-------[GitHub-repo]
+ [MySystem] - p1.tf  ---- TFCore---- providers(plugins+APIs)-------[OCI - LB]
+ [MySystem] - p1.tf  ---- TFCore---- providers(plugins+APIs)-------[aws - EC2]
+ [MySystem] - p1.tf  ---- TFCore---- providers(plugins+APIs)-------[InfluxDB]
+						^^^^^^^^^^^^^^
+						  Resource
+
+	TFCore ---- API -----------[Cloud]
+	                   ---------------------
+		 --------->------------
+			keys
+		----------------------
+		---------------------------------create these resource
+			---<----------------
+			 ok let me check with IAM
+			 ----------<----------------
+			       Authorized
+				------------------->resource will be created
+		then state file (TF state file) will be generated
+		       ----------------------------
+			json format
+
+####################################################################################
+block style
+-----------------
+Label{
+....
+....
+....
+
+}
+
+terraform fmt
+
+provider block  - provider information 	- cloud details (refer from TF portal)
+resource block - actual resource information - resource  details(compute,DB,network,LB etc.,)
+variable block - holding some value 
+output block - display result to monitor 
+data block - datasource 
+module block  - reusing exisiting code 
+============================================================================================
+
+step 1: write a TF code  -> mkdir TFActivity cd TFActivity -> vi p1.tf
+					|	|___ TF Root Config File
+					TF Configuration directory
+
+step 2: init - initialize to required plugins  => terraform init -v  - just view  Vs terraform init 
+|
+step 3: Validate Terraform config files  => terraform validate 
+|
+step 4: Formatting Terraform config file => terraform fmt 
+|
+step 5:  Review the terraform plan => terraform plan 
+|
+step 6:  Apply => terraform apply
+ 
++==========================================================+
+| Local M/C   => local resource(file),GitHub
+|
+| Local M/C =>OCI =>[TF-Server]
+		     |
+		   Install TF
+		   |
+		  p1.tf ------------------------------->oci resource 
+		  ...
+		  ...
+=================================================================
+wget https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_arm.zip
+
+tar xvzf terraform_1.5.7_linux_arm.zip
+cd terraform_1.5.7_linux_arm
+ls
+cp terraform  /usr/local/bin/
+|
+=======================================================================================
+open your command prompt
+|
+create a new directory (ex: mkdir TFActivity) 
+|
+go to the directory (ex: cd TFActivity)
+|
+create a subdirectory (ex: mkdir usecase1)
+|
+go to the usecase1 directory (ex: cd usecase1)
+|
+local_file resource 
+^^^^^^^^^^^^^^^^^^
+
+==========================================================================
+init command 
+-------------------
+1. plugin installation
+2. child module installation <==
+3. backend initialization
+Note: if any of changes are done in the configfile (or) configuration then we need to run init command to intialize
+ the working directory again.
+
+plan command
+------------------
+1. Read the current state of any existing remote objects(resource) to ensure that the state is up to date.
+2. compares the current state to the previous state - show difference
+3. show the preview 
+
+apply command
+--------------------
+real resource get executed - statefile will generated
+------------------------------------------------------------------------------------------------------------------------------------------
+
+variable "variablename" {
+              ^^^^^^^^^^^^^
+	user defined
+	Key=Value <== arguments - required arguments
+	|
+	default = our_input_value
+}
+
+In shell script(in linux commandline) =>  fname="p1.log"	echo fname ->fname  Vs echo $fname ->p1.log
+								
+In TF	=> variable fname{			resource  "local_file"  "myfile" {
+		default="p1.log"			filename = var.fname
+	     }				}
+
+variable - keyword 
+variable name (or) logical name - user defined 
+
+file: main.tf
+----------------------
+resource ....  ...{
+	.... = var.myfile
+	              ^^^^^^
+		|__refer to variable block 
+}
+
+
+create a subdirectory (ex: mkdir usecase2)
+|
+go to the usecase1 directory (ex: cd usecase2)
+|
+|___ file: main.tf  
+               ^^^^
+	|__user defined 
+
+resource "local_file" "myfile" {
+	filename = var.Fname
+	content = "Test message"
+}
+variable Fname{
+	default = "/tmp/test.log"
+}
+
+terraform init
+terraform validate
+terraform fmt
+terraform plan
+terraform apply
+---------------------------------------------
+		  r1	r2     r3    r4
+		[ compute	DB   vcn appln ]
+		  		|_______    app1 app2 app3 app4 app5 ... N
+					 |_________________________|
+				resource "r4"  Ln1 {
+					...
+				}
+				resource "r4" Ln2{
+					..
+				}
+				resource "r4" Ln3{
+					..
+				}
+------------------------------------------------------------------------------------------------------
+variable "variable_name"{
+	type = <typeName>
+	default = value
+}
+----------------------------------------------------------------------------------------------------------------------
+app="Flask"
+port=5000
+|
+display - app details to monitor   =>output 
+|
+
+variable "app" {
+	type = string
+	default = "Flask"
+}
+variable "port"{
+	type = number
+	default = 5000
+}
+variable "webapp"{
+	type = list			- like array - variable - holding more than one value
+	default = ["Flask",5000]
+}
+variable "myapp"{
+	type = map		- like dict/hash/associated array -> key:Value //data
+	default = {
+		K1="Flask"
+		K2=5000
+	}
+}
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@
+@  list  - collection of values - index based - base index is 0
+@
+@    Listname = [ "D1","D2","D3"]
+@	            0        1       2 <== index
+@
+@  To access nth data => Listname[index]   => var.variableName[index]  
+@			    --------			
+@
+@
+@  map - like dict/hash - key:value (pair)	using key - we can fetch single value
+@	
+@    mapname= { K1: D1,K2: D2,K3:D3,K4:D4 .... Kn:Vn}
+@
+@		Key     | Value
+@		---------|-------------
+@		 K1      | D1
+@                               -------- |-------------
+@		 K2      | D2
+@		---------|----------------
+@		 K3      | D3
+@		---------|-----------------
+@		 K4      | D4
+@		---------------------------
+@  To access nth data => mapname["key"]	=> var.variableName["key"]
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+Task
+--------
+Write Terraform Config script 
+- create two files  -> main.tf -> local_file ""
+	           -> output.tf -> output block - display user defined message to monitor.
+|
+statefile
+|
+In same config directory (root directory)
+            ----------------------
+	|__ create ab.tf  file
+		|___ 2 blocks  - variable - type : map - env details
+			        output - display env details to monitor
+
+ex:     region=""
+          test = "medium"
+          prod = "large"
+          ....
+           --------------//map
+------------------------------------------------------------------------------------------------
+
+main.tf  output.tf
+[root@krosumlabs usecase5]# terraform init
+
+Initializing the backend...
+
+Initializing provider plugins...
+- Finding latest version of hashicorp/local...
+- Installing hashicorp/local v2.4.0...
+- Installed hashicorp/local v2.4.0 (signed by HashiCorp)
+
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+[root@krosumlabs usecase5]# terraform validate
+Success! The configuration is valid.
+
+[root@krosumlabs usecase5]# terraform fmt
+main.tf
+output.tf
+[root@krosumlabs usecase5]# terraform plan
+
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # local_file.myfile will be created
+  + resource "local_file" "myfile" {
+      + content              = "test data"
+      + content_base64sha256 = (known after apply)
+      + content_base64sha512 = (known after apply)
+      + content_md5          = (known after apply)
+      + content_sha1         = (known after apply)
+      + content_sha256       = (known after apply)
+      + content_sha512       = (known after apply)
+      + directory_permission = "0777"
+      + file_permission      = "0777"
+      + filename             = "/tmp/test.txt"
+      + id                   = (known after apply)
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + result1 = "Test data is created"
+
+-------------------------------------------------------------------------------
+
+[root@krosumlabs usecase5]# cat main.tf
+resource "local_file" "myfile" {
+  filename = "/tmp/test.txt"
+  content  = "test data"
+}
+[root@krosumlabs usecase5]# cat output.tf
+output "result1" {
+  value = "Test data is created"
+}
+[root@krosumlabs usecase5]# terraform plan
+..
+
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
+[root@krosumlabs usecase5]# ls -t
+output.tf  main.tf
+[root@krosumlabs usecase5]# terraform output
+?
+¦ Warning: No outputs found
+¦
+¦ The state file either has no outputs defined, or all the defined outputs are
+¦ empty. Please define an output in your configuration with the `output`
+¦ keyword and run `terraform refresh` for it to become available. If you are
+¦ using interpolation, please verify the interpolated value is not empty. You
+¦ can use the `terraform console` command to assist.
+?
+[root@krosumlabs usecase5]# terraform apply
+
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # local_file.myfile will be created
+  + resource "local_file" "myfile" {
+      + content              = "test data"
+      + content_base64sha256 = (known after apply)
+      + content_base64sha512 = (known after apply)
+      + content_md5          = (known after apply)
+      + content_sha1         = (known after apply)
+      + content_sha256       = (known after apply)
+      + content_sha512       = (known after apply)
+      + directory_permission = "0777"
+      + file_permission      = "0777"
+      + filename             = "/tmp/test.txt"
+      + id                   = (known after apply)
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + result1 = "Test data is created"
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+local_file.myfile: Creating...
+local_file.myfile: Creation complete after 0s [id=f48dd853820860816c75d54d0f584dc863327a7c]
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+result1 = "Test data is created"
+[root@krosumlabs usecase5]# terraform output
+result1 = "Test data is created"
+[root@krosumlabs usecase5]# terraform output result1
+"Test data is created"
+[root@krosumlabs usecase5]#
+
+---------------------------------------------------------------------------
+Task1
+----------
+main.tf  
+	- resource block 
+output.tf
+	- output block
+----------------------------------------apply =>terraform.tfstate
+|
+|
+ab.tf
+	- variable block
+	- output block
+------------------------------------->apply 
+|
+|
+renamed  main.tf ->main  //there is no main.tf file - terraform won't read main file
+				           ------------------------------------
+ab.tf
+=======
+variable <variableName>{
+	type=map
+	default {
+		K1=Value
+	}
+}
+output <outputName>{
+	value = var.<variableName>
+}	         = var.mapName['Key'] ->Value
+
+
+[root@krosumlabs usecase5]# cat ab.tf
+variable "demo" {
+  type = map(any)
+  default = {
+    fstype  = "xfs"
+    fpart   = "/dev/xvdb1"
+    fmount  = "/D1"
+    fstatus = true
+  }
+}
+output "display1" {
+  value = var.demo["fstype"]
+}
+[root@krosumlabs usecase5]#
+
+[root@krosumlabs usecase5]# terraform output display1
+xfs
+
+[root@krosumlabs usecase5]#  mounted file system type is:xfs
+		               ^^^^^^^^^^^^^^^^^^^^^^^^ ===
+			 User defined string	        |__Value
+
+
+display1 = "Mounted file system typs is:var.demo[fstype]"
+
+"${variable}"
+  ------------
+    |__replace value
+output result2{
+value  = "Mounted file system typs is:${var.demo[fstype]}"
+}       
+Mounted file system type is:xfs
+
+==========================================================================
+variable "demo" {
+	default = ["OL5","OL6","OL7","OL8"]
+	type  = list
+}
+
+How to dispaly OL6 value ?
+
+output result{
+	value = var.demo[1]
+}
+
+output result{
+	value = "Selected Server name is:${var.demo[1]}"
+}
+---------------------------------------------------------------------------------------------------------------------
+file: loadbalance.tf
+
+variable "tenancy_ocid" {}
+variable "user_ocid" {}
+variable "fingerprint" {}
+variable "ssh_public_key" {}
+variable "compartment_ocid" {}
+-------------------------------------------------------------
+
+file: vcn.tf
+---------------
+resource "oci_core_virtual_network" "vcn-web" {
+	compartment_id = "${var.compartment_ocid}"
+	.....	             ^^^^^^^^^^^^^^^^^^^^^^^^
+}
+---------------------------------------------------------------------------------------------------------------------
+To pass input  variable from commandline 
+terraform apply -var="Variable=value" {Enter} 
+
+terraform apply -var="myos=OL7"
+terraform apply -var="myos=[OL7,OL8,OL9]"
+terraform apply -var="myos={"K1"="OL7","K2"="OL8","K3"="OL9"}
+	       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+		commandline argument inputs 
+
+
+
+
+[root@krosumlabs usecase6]#
+[root@krosumlabs usecase6]# cat main.tf
+resource "local_file" "myfile"{
+        filename = var.Fname
+        content = "test message"
+}
+
+[root@krosumlabs usecase6]# cat variable.tf
+variable Fname {}
+[root@krosumlabs usecase6]# cat output.tf
+output "display" {
+        value = "File name ${var.Fname} is created"
+}
+
+[root@krosumlabs usecase6]# terraform apply  {Enter}  <== This is interactive input (or) execution input
+
+		Vs
+[root@krosumlabs usecase6]# terraform apply -var="Fname=/tmp/p1.c" <== This is non-interactive input (or) commandline inputs
+
+===================================================================================================
+Write TF config file
+- create a variable file - empty block
+- create a output file - display network parameters to monitor
+		             ------------------------
+			|__type is map - pass the network parameters details in commandline arguments
+
+Example
+=======
+netinfo  - variableName
+|
+|__{ "bootproto" = "dhcp",
+        "defroute" = "yes",
+        "onboot" = true }
+    --------------------------------//
+
+
+commandline args variable - 1st 
+|
+variable initialization - variable block - 2nd
+------------------
+filename.tfvars
+
+##############################################################################################
+github
+======
+step 1: create a provider block - copy/paste provider details inside the provider
+|
+step 2: resource: githubrepo  - search terraform registry - name of the resource => github_repository
+|
+step 3: check required parameters (or) arguments 
+|
+step 4: To generate API  - update this token to provider (provider block)
+
+=========================================================================
+
+[root@krosumlabs case1]# cat main.tf
+terraform {
+  required_providers {
+    github = {
+      source  = "integrations/github"
+      version = "5.38.0"
+    }
+  }
+}
+
+provider "github" {
+ # Configuration options
+}
+resource "github_repository" "myrepo1" {
+  name        = "example-1"
+  description = "This is repository is created by Terraform"
+  visibility  = "private"
+}
+[root@krosumlabs case1]#
+
+github.com -> settings ->developer settings ->personal access token(PAT) ->Tokens(classic) ->Generate new token
+//copy this token and paste into provider block (ex: token="<paste>")
+
+
+#########################################################################################
+[root@krosumlabs case1]# cat main.tf
+terraform {
+  required_providers {
+    github = {
+      source  = "integrations/github"
+      version = "5.38.0"
+    }
+  }
+}
+
+provider "github" {
+  token = "ghp_NEkyxapSPhmFENQPbuuFtA93ZUeOcmg5tyAId" # Configuration options
+}
+resource "github_repository" "myrepo1" {
+  name        = "example-1"
+  description = "This is repository is created by Terraform"
+  visibility  = "private"
+}
+[root@krosumlabs case1]#
+
+###########################################################################################
