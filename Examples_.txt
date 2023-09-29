@@ -1,0 +1,127 @@
+[root@terraformserver TF_class]# cat Resource_dependency/implicit/main.tf
+resource "local_file" "pet" {
+        filename = var.filename
+        content = "Test code ${random_pet.my-pet.id}" # implicit dependency
+
+}
+resource "random_pet" "my-pet"{
+        prefix = "Mr.ABC"
+        length = 5
+}
+variable filename {
+        default = "/tmp/test.txt"
+}
+[root@terraformserver TF_class]# cat Resource_dependency/Explicit/main.tf
+resource "local_file" "pet" {
+        filename = var.filename
+        content = "Test code"
+        depends_on = [
+                random_pet.my-pet
+        ]
+}
+resource "random_pet" "my-pet"{
+        prefix = "Mr.ABC"
+        length = 5
+}
+variable filename {
+        default = "/tmp/test.txt"
+}
+[root@terraformserver TF_class]#
+
+
+
+[root@terraformserver TF_class]# cat Functions/p1.tf
+output "example" {
+  value = 150 >100 ? "True" : "False"
+}
+[root@terraformserver TF_class]#
+
+
+# provisioner
+#############
+[root@terraformserver TF_class]# cat provisioner/local_provisioner/main.tf
+resource "random_pet" "mypet" {
+  prefix = "Mr."
+  provisioner "local-exec" {
+    command = "echo Today date and time `date` >p1.log"
+  }
+}
+
+
+[root@terraformserver TF_class]# cat route_table_internet_GW/main.tf
+
+###############  variable
+variable "tenancy_ocid" {}
+variable "user_ocid" {}
+variable "fingerprint" {}
+variable "private_key_path" {}
+variable "compartment_ocid" {}
+variable "region" {}
+variable "AD" {}
+
+###############  provider details
+provider "oci" {
+  region           = var.region
+  tenancy_ocid     = var.tenancy_ocid
+  user_ocid        = var.user_ocid
+  fingerprint      = var.fingerprint
+  private_key_path = var.private_key_path
+}
+variable "vcn-terraform" {
+  default = "10.0.0.0/16"
+}
+##############  resource details
+resource "oci_core_vcn" "myvcn" {
+  compartment_id = var.compartment_ocid
+  cidr_block     = var.vcn-terraform
+  dns_label      = "vcn1"
+  display_name   = "my-test-vcn"
+}
+############# create a new Internet Gateway
+resource "oci_core_internet_gateway" "terraform-ig" {
+  compartment_id = var.compartment_ocid
+  vcn_id         = oci_core_vcn.myvcn.id
+  display_name   = "terraform-internet-gateway"
+}
+############# create a new routetable
+resource "oci_core_route_table" "terraform-rt" {
+  compartment_id = var.compartment_ocid
+  vcn_id         = oci_core_vcn.myvcn.id
+  display_name   = "terraform-route-table"
+  route_rules {
+    destination       = "0.0.0.0/0"
+    network_entity_id = oci_core_internet_gateway.terraform-ig.id
+  }
+}
+############# create a public subnet 1
+resource "oci_core_subnet" "terraform-public-subnet1" {
+  cidr_block     = "10.0.1.0/24"
+  display_name   = "terraform-public-subnet1"
+  compartment_id = var.compartment_ocid
+  vcn_id         = oci_core_vcn.myvcn.id
+  #availability_domain = lookup(data.oci_identity_availability_domains.ADs.availability_domains[var.AD - 1], "name")
+}
+
+###
+/*
+data "oci_identity_availability_domains" "ADs" {
+  compartment_id = var.tenancy_ocid
+}
+*/
+
+
+[root@terraformserver TF_class]# cat testdir/t1.tf
+resource "random_pet" "pet1"{
+        prefix="Mr"
+}
+[root@terraformserver TF_class]# cat testdir/t2.tf
+data "oci_identity_availability_domains" "test_availability_domains" {
+    #Required
+    compartment_id = var.tenancy_ocid
+}
+[root@terraformserver TF_class]# cat testdir/t3.tf
+variable tenancy_ocid {}
+[root@terraformserver TF_class]#
+
+
+
