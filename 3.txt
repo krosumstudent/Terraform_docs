@@ -1,0 +1,184 @@
+ meta arguments
+---------------------
+ count
+  |
+  |__ accept numeric value
+
+count=<Number>
+|
+|_ resource,data,module blocks 
+
+count=5
+count.index <== argument keyword
+          0
+          1
+          2
+          3
+          4
+---------------------------------------------------------------------------------------------------------------------------------------------
+for_each
+------------
+ - supports map,list,set
+
+count					for_each
+-------					------------
+terraform output				terraform output
+		
+demo = [					demo = {
+ {					"/root/d1.log" = { }
+					" /root/c1.log" = { }
+ },					
+ {
+
+ },
+ {
+
+ },
+{
+
+}
+]
+######################################################################################
+Resource Dependencies
+------------------------------
+[R2]   [R1]
+ 
+Implicit Dependency				Explicit Dependency
+resource "local_file" "R1" {		resource "local_file" "R1" {
+		.......			...
+}			 Vs	  depends_on = [ random_pet.R2]
+resource "random_pet" "R2"{		}
+	.....
+	.....
+}
+
+
+######################################################################################
+Terraform provisioners
+-------------------------------
+provisioner 
+|
+provisioner "remote-exec" {
+	....
+	....
+}
+########################################################################################
+
+local-exec - execute command in system TF running (not on the remote/resource)
+
+file - copies file /directory from machine running TF -> newly created resource
+
+remote-exec - Invoke a script/commands on remote machine(resource) 
+					|
+					after create the resource
+
+resource "oci_instance" "in1" {
+
+	connection {
+	type = "ssh"	
+	...
+	private_key = ....
+	host = <ip>
+	}
+	provisioner "remote-exec" {
+		inline = [ "yum -y install httpd", "systemctl start httpd",....."]
+	}
+	provisioner "local-exec" {	
+		command = "...."
+	}
+	provisioner "file" {
+		source = "terraform.state"
+		destination="/tmp/tf.state.backup"
+	}
+	
+#####################################################################################################
+
+oci - subnet
+--------------------
+subnet is logically subdivision of an IP.
+
+IG
+RT
+DRG
+SecurityList
+
+Creation of public and private subnet along with NAT Gatway
+|
+create a new vcn
+create a new NAT Gateway	
+create a new InternetGateway
+create a RouteTable
+create a subnet
+
+
++-------------------------+
+|   name      |   ...
+|--------------|  ...
+|   ..             |  ...
+|--------------|------------|
+
+==========================================================
+<directory>/  <== config.root directory
+	  resourcefile.tf (or) templatefile.tf 
+	  ...	
+<directory>/ <= config.root directory
+	  ....
+	  ....
+	  ....
+=============================================================================
+Object Storage
+-------------------
+OCI - storage class
+	- object storage    - frequent access; fast
+	- archive storage  -  rarely used data;
+
+	- object storage    - frequent access; fast
+	  |__ store unstructured data of any content type(image,videos,analytic data)
+	  |___regional service (we can access data from anywhere)
+	  |___ access through vcn
+	  |____scalable - to storage large volume of data
+
+	- archive storage  - log,large datasets
+	
+	object storage - resources
+	1. Object
+	2. Bucket
+	3. Namespace
+	
+TF resource name -> oci_objectstorage_bucket - create a new bucket
+|
+To get datasources -> data oci_objectstorage_bucket_summaries
+
+Object storage: Creation of a new bucket
+-------------------------------------------------
+oci_objectstorage_bucket  - refer this resource docs
+
+oci ->menu->object storage 
+##############################################################
+File system 
+----------------
+In General (not cloud) - /dev/sdb (HD)
+		    -----------------
+		     1. partition => /dev/sdb1 /dev/sdb2
+		     2. create a filesystem - /dev/sdb1 (logical components)
+					        |_BootBlock,SuperBlock,InodeBlock,DataBlock
+		     3. mount the filesystem(/dev/sdb1)  /D1
+
+NetworkFileSystem(NFS)
+Server		Client
+ - export		- mount
+NFS3.0 //supports NLM //file locking functionality
+
+1. Mount Target - NFS endpoint 
+2. Export - Controls how NFS Clients access filesystems when they connect to a mount target
+3. Export Set  - Collection of 1 or more exporters
+--------------
+ - Export options
+ -  Snapshot 
+ - Encryption 
+
+TF resource => oci_file_storage_file_system
+	        oci_file_storage_export
+	        oci_file_storage_mount_target
+	       oci_file_storage_export_set
+-------------------------------------------------------------------------------------------------------------------------------------------------

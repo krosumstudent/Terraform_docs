@@ -1,0 +1,357 @@
+Refer: https://github.com/oracle-terraform-modules/terraform-oci-tdf-lb/tree/main
+Refer : https://github.com/krosumstudent/Terraform_docs/blob/main/TFFunctions.docx
+------
+Regx
+------
+ |__ search a pattern in more specific pattern
+ |__regex()
+      |
+     regex("pattern","inputString") 
+    can(<regx>) ->true/false
+
+Basic Regx Expression(BRE) 			Extended Regular Expression(ERE)
+------------------------------------			----------------------------------------------
+- single pattern				- multiple patterns
+
+^					  |   =>  pattern1|pattern2 ->anyone pattern is matched any order ->True
+$					 ()  => (pattern1)(pattern2) ->both pattern should match (same order)
+^pattern$					  +  => match one or more occurrence 
+.					 {}
+.*					 ---
+[ ]					<pattern>{n} -> minimum n times
+^[ ]					<pattern>{n,} => minimum n times maximum nolimit
+[ ]$					<pattern>{n,m} =>minimum n times maximum m times
+[^  ]					
+
+
+^ - search a pattern line starts with pattern
+------------------------------------------------------------------------------------------------
+file("filename")
+
+^sales - line begins with sales
+^505  - line begins with 505
+^a      - line starts with 'a' 
+
+$ - search a pattern line ends with pattern
+pattern$  - line ends 
+sales$  - line ends with sales	 asdfasfdsafsasales//OK
+
+^pattern$ - pattern only
+
+^sales$ -> sales //OK
+
+. - match any single chars
+.* - list of all
+
+[ ] - character class
+
+[Aa]run =>	Arun arun //OK
+-----
+[Aa][Rr]un
+ ------------>   ARun Arun aRun arun //OK
+[a-z] - match any lowercase chars
+[A-Z] - match any uppercase chars
+[a-zA-Z] - match any alphas
+----------
+[0-9] - match any digits
+
+[a-zA-Z0-9]- match any alpha number
+
+^[a-zA-Z]		[A-Za-z]$
+^[0-9]		[0-9]$
+^<pattern>		<pattern>$
+
+
+
+Ternary expression
+-------------------------
+value = var.load_balance_type == "network" ?  aws_lb.networklb.dns_name : aws_loadbalance.dns_name
+-----				 --		                --
+
+
+resource <resourcename> "exmaple" {
+	ami= ""
+	count = var.create_instance ? 1 : 2
+	..
+}
+Explorring Terraform  functions
+string
+collection
+encoding
+file system
+numeric
+data and time
+encry
+--------------------------
+###########################################################################################
+Debug
+------
+terraform plan
+
+export TF_LOG=TRACE
+
+terraform plan
+export TF_LOG_PATH=/tmp/terraform.log
+head -10 /tmp/terraform.logs
+|
+To disable log separately
+
+unset TF_LOG_PATH
+########################################################################################
+
+Loadbalancer - automatically distributes traffic to list health backend servers
+----------------
+Health Check Policy - confirm the availability of backend servers
+Load Balancing Policy - tells the load LB how to distribute incoming traffic to the backend servers
+
+		(cloud)
+		   |
+		<port:80>
+		  |
+		[LB]
+		 |
+	-----------------------------------------
+	|80	|80	|80	|  80
+	[H1]	[H2]	[H3]	[H4] 
+		
+	
+1. public load balancer  
+2. private load balancer
+
+oci_core_default_security_list
+oci_load_balancer
+oci_load_balancer_backend_set
+oci_load_balancer_listener
+
+
+two instances 
+two public subnets
+security list with 80 port opeend 
+listeners
+Back-end sets
+Path route sets
+Hostnames
+....
+
+# use variables
+# providers
+#
+# instance_image => https://docs.us-phoenix-1.oraclecloud.com/images/
+
+variable "instance_image_ocid" {
+	type = "map"
+	default = 
+	 { 
+	eu-frankfurt-1 = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa334274wxgfcpoptphpte6f3xqbhyqz2db4b57ddar6b4m5kwoxga"
+	
+	}
+}
+}
+------------------
+for loop		Vs	for_each (meta args)
+
+for variable in <collection>
+	      --------------
+     ^^^^^^^^
+output "display"{
+	value = [for]
+
+}
+
+variable myvars {
+        default = ["D1","D2","D3"]
+}
+output "display" {
+        value = [ for a in var.myvars:lower(a)]
+}
+##########################################################################################
+Terraform							Ansible
+-------------							-----------
+Better at orchestration - process of creating infrastructure	Better at Configuration management
+
+Declarative (block styles - resource,data,variable,module	Procedure style 
+		       provider,terraform,locals)		
+
+Better at managing infrastructure components on Cloud.	Both on Cloud and On-prem
+		Iac				Iac - CM
+
+Configuration Management
+---------------------------------
+ |__Validation based execution
+ |__ check the machine state
+
+root@host~]# yum install httpd
+|
+file: hosts.txt
+-----------------
+server1
+server2
+server3
+server4
+server5
+----------------
+=====================================
+while read var
+do
+	ssh $var <<EOF
+	     rpm -q httpd >/dev/null 2>&1
+	     if [ $? -eq 0 ];then
+		echo "installed"		Vs    ansible <hosts> -m yum -a "name=httpd state=installed" //commandline (ad-hoc)
+	    else		
+		yum -y install httpd >/dev/null 2>&1		    Vs
+		if [ $? -eq 0 ]			file: p1.yml
+		then				---------------
+		       echo "Success"			- name: install webserver
+		else				  hosts: <host>
+		        echo "Failed"			  tasks:
+		 fi				  - yum: name="httpd" state="installed"
+	   fi					
+done<hosts.txt					ansible-playbook p1.yml
+
+=====================================================================================
+In Terraform 				In Ansible
+resource //					module //
+|					    |___python file (filename.py)
+|__go 					module - arguments
+						 |__key/value (pairs)
+
+Ansible 
+Ansible Architecture & workflow
+Ansible module 
+Ansible adhoc command ( commandline) => ansible <remotehostGroupName> -m <module> -a <args>
+ |
+ YAML
+ |
+ playbook (like a script) =>filename.yml (or) filename.yaml
+ ^^^^^^^^^
+  |___1. Target section - <remotehost details> + <permission>
+  |___2.  variable section
+  |___3. task section  //actual ansible module execution taken here
+  |___4. handler section //depends on task execution ->machine ->machine state - changes based
+  |___5. template section 
+   |
+   |				[ ]
+  roles - directory
+ 					
+ <project>
+          |___ Dev/
+	     |__ tasks/ developement tools (install)
+	     |__ vars/
+	     |__ handler/
+	     |__ template/
+          |___ DB/
+	   |____tasks/
+	   |____vars/
+	   |____handler/
+	   |_____template/
+         	
+  |
+ansible-galaxy
+
+
+
+[OL7: ansible]
+ |
+/etc/ansible/ansible.cfg
+	   |
+	   |___map the inventory file (/etc/ansible/hosts)
+		      ----------------		|___inventory file
+		       list of remote node(IPAddress;hostname;alias)
+			---------------
+
+inventory file format (INI)
+---------------------------------
+[groupName]
+nodeName = <Value>
+..
+---------------------------------
+   host
+ [ansible] (parent-python)
+     |______________________________________________[remote_node1] [remote_node2] ... [remote_nodeN]
+		Establish SSH Connection 
+     |___________________________________|____________  create one subshell
+							|
+							|
+						         python shell(child-python)
+							  |
+    |_____________________push the module(ansible module -file.py) to remote 
+							  |
+							module execution
+							  |
+							results
+						                   |
+    ---------------------------------------<------------jsonformat--------------------------|
+							  |
+							exit - chile-python
+							 |
+							exit - subshell	
+	
+-------------------------------------------------------------------------------------------------------------------------------
+YAML
+---------
+  |___ key:<space>value //pair structure 
+
+  |__ansible play book 
+  |__configuration file 	
+
+---
+- name:  <name of the playbook>  <===  Target section
+  hosts:  <inventoryGroup>            <===  Target section
+  tasks:
+  - name:  <name of the task>
+    module:   args
+ -  name:  <name of the tasks>
+    module: args
+ -  name: <name of the task>
+    module: args
+---------------------------------------------
+
+array (or) list
+
+[ V1,V2,V3,..Vn ] <== index 
+-------------------------
+	|__ array (or) list
+
+{K1: V1,K2: V2,K3: V3,...Kn:Vn} <== key based 
+ -----------------------------------------
+	|__object(or) dict
+
+key:<space>Value
+
+Key:<space>[V1,V2,V3...Vn]
+	(or)
+
+Key:
+-<space>V1
+-<space>V2
+-<space>V2
+-<space>V3
+..
+-<space>Vn
+
+ansible web -m yum -a "name=httpd state=installed"
+|
+tasks:
+- name: <name of the task>			- name: <name of the task>
+  yum:			<or>		  yum: name=httpd state=instaled
+     name:  httpd
+     state:   installed
+		
+---------------------------------------------------------------------------------------------------------------------------------------------
+yum install –y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+yum install –y ansible 
+ansible     - - version 
+|
+|
+mkdir <directory>
+|
+cd <directory>
+|
+ansible --version   ---->(A)
+|
+touch ansible.cfg 
+|
+ansible --version  ---->(B)
+
+# see the difference conf_file=<>
+=========================================================================================
