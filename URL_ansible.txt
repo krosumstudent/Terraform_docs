@@ -1,0 +1,7 @@
+https://aap2.demoredhat.com/exercises/ansible_network/2-first-playbook/#step-1---examine-ansible-playbook
+
+
+https://docs.ansible.com/ansible-core/devel/user_guide/complex_data_manipulation.html
+
+
+https://ansible-tutorial.schoolofdevops.com/playbooks/#listing-hosts-tasks-and-tags-in-a-playbook
